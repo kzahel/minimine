@@ -1,0 +1,46 @@
+# Mini Minecraft Clone Tasks
+
+- [x] Initialize Project
+    - [x] Create Vite + TypeScript project <!-- id: 0 -->
+    - [x] Install dependencies (Three.js, etc.) <!-- id: 1 -->
+    - [x] Setup project structure (Client/Server/Worker separation) <!-- id: 2 -->
+- [x] Core Engine Setup
+    - [x] Implement Game Loop <!-- id: 3 -->
+    - [x] Setup Three.js Scene, Camera, Renderer <!-- id: 4 -->
+    - [x] Implement Input Handling (WASD, Mouse Look) <!-- id: 5 -->
+- [x] World Generation & Management (Worker)
+    - [x] Setup Web Worker for World Logic <!-- id: 6 -->
+    - [x] Implement Chunk Generation (Simple Noise) <!-- id: 7 -->
+    - [x] Implement Chunk Meshing (Greedy Meshing or Simple Culled) <!-- id: 8 -->
+    - [x] Implement Client-Worker Communication Protocol <!-- id: 9 -->
+    - [x] Implement Abstract Persistence Layer (Interface for IDB/File/SQLite) <!-- id: 18 -->
+- [x] Player Interaction
+    - [x] Implement Raycasting for Block Selection <!-- id: 10 -->
+    - [x] Implement Block Breaking/Placing <!-- id: 11 -->
+    - [x] Implement Physics/Collision Detection (Basic AABB) <!-- id: 12 -->
+    - [x] Implement Jump & Fly Mode <!-- id: 19 -->
+    - [x] Add Arrow Key Support for Movement <!-- id: 28 -->
+- [ ] UI & Menus
+    - [x] Create HUD (Crosshair, Hotbar placeholder) <!-- id: 13 -->
+    - [x] Create Settings Menu (Render Distance, FOV, FPS Limit, Fog Toggle) <!-- id: 14 -->
+    - [ ] Create New World Menu (Seed Input) <!-- id: 20 -->
+    - [x] Implement Debug Stats (FPS, Coord, Chunks) <!-- id: 15 -->
+- [x] Persistence
+    - [x] Implement IndexedDB storage in Worker <!-- id: 16 -->
+    - [x] Save/Load World Data <!-- id: 17 -->
+- [ ] Debugging & Polish
+    - [ ] Implement Spawn Logic (Ensure player is above ground) <!-- id: 21 -->
+    - [ ] Add Isometric/Top-Down Debug Camera <!-- id: 22 -->
+    - [ ] Verify Chunk Loading/Rendering <!-- id: 23 -->
+    - [x] Create Integration Test for Player Spawning <!-- id: 24 -->
+    - [x] Create Headless Test Script <!-- id: 25 -->
+    - [x] Add Visual Debug Aids (Grid, Test Cube) <!-- id: 26 -->
+    - [x] Verify Skybox/Background <!-- id: 27 -->
+    - [x] Enable Fly Mode by Default <!-- id: 29 -->
+    - [x] Increase Block Interaction Range <!-- id: 30 -->
+    - [x] Implement Texture Atlas & Improved UV Mapping <!-- id: 31 -->
+    - [x] Implement Vertex-Based Ambient Occlusion <!-- id: 32 -->
+    - [x] Add Afternoon Sun & Shadows <!-- id: 33 -->
+    - [x] Add Lighting Settings Toggle <!-- id: 34 -->
+    - [x] Implement Chunk Unloading <!-- id: 35 -->
+    - [x] Setup GitHub Pages Deployment <!-- id: 36 -->

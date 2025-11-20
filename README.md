@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# Mini Minecraft Clone
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A voxel-based sandbox game built with **TypeScript**, **Three.js**, and **Vite**. This project was "vibe coded" using an advanced AI coding assistant, demonstrating a modern workflow where high-level intent guides AI implementation.
 
-Currently, two official plugins are available:
+## 🎮 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Infinite Procedural World**: Terrain generated using Simplex Noise in a Web Worker.
+- **Voxel Engine**: Optimized chunk meshing with hidden face culling and vertex-based Ambient Occlusion (AO).
+- **Lighting**: Day/Night cycle elements with afternoon sun and dynamic shadows.
+- **Physics**: Player movement, jumping, flying, and collision detection.
+- **Interaction**: Break and place blocks with raycasting.
+- **Persistence**: World changes are saved locally using IndexedDB.
+- **Configurable Settings**: Render distance, FOV, and lighting toggles.
 
-## React Compiler
+## 🚀 How to Run
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
 
-## Expanding the ESLint configuration
+2.  **Start Development Server**:
+    ```bash
+    npm run dev
+    ```
+    Open `http://localhost:5173` in your browser.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3.  **Build for Production**:
+    ```bash
+    npm run build
+    ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🤖 "Vibe Coding" & Artifacts
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+This project was created through an interactive "vibe coding" process. The `vibe_artifacts/` directory contains the living documents used during development:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **[task.md](vibe_artifacts/task.md)**: The step-by-step checklist of tasks completed.
+- **[implementation_plan.md](vibe_artifacts/implementation_plan.md)**: The technical design document.
+- **[walkthrough.md](vibe_artifacts/walkthrough.md)**: A guide to the implemented features and debugging tools.
+- **[generation_metadata.md](vibe_artifacts/generation_metadata.md)**: Details about the AI generation process.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🛠️ Technical Architecture
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Core Engine (`src/core`)
+- **Engine.ts**: Main game loop, scene management, and renderer.
+- **WorldManager.ts**: Client-side world state, chunk management, and worker communication.
+- **InputManager.ts**: Handles keyboard/mouse input and pointer lock.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Web Worker (`src/worker`)
+- **WorldWorker.ts**: Offloads heavy terrain generation and meshing.
+- **Chunk.ts**: Block data management and geometry generation.
+- **TerrainGenerator.ts**: Simplex noise-based terrain logic.
+
+### UI (`src/ui`)
+- **React Overlay**: Handles the HUD, Settings menu, and debug stats.
+
+---
+*Generated with ❤️ by Google DeepMind's Advanced Agentic Coding Team.*

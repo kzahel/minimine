@@ -38,19 +38,21 @@ export class InputManager {
             this.emit('pointerlockchange', this.isPointerLocked);
         });
 
-        document.addEventListener('click', () => {
+        document.addEventListener('mousedown', (e) => {
             if (!this.isPointerLocked) {
                 document.body.requestPointerLock();
             } else {
-                this.emit('click'); // Left click
+                if (e.button === 0) {
+                    this.emit('click'); // Left click
+                } else if (e.button === 2) {
+                    this.emit('rightclick'); // Right click
+                }
             }
         });
 
         document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            if (this.isPointerLocked) {
-                this.emit('rightclick');
-            }
+            // We handle right click in mousedown now
         });
 
         document.addEventListener('mousemove', (e) => {
