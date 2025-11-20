@@ -10,6 +10,7 @@ export class Engine {
     inputManager: InputManager;
     worldManager: WorldManager;
     stats: Stats;
+    dirLight: THREE.DirectionalLight | null = null;
 
     isRunning: boolean = false;
     container: HTMLElement;
@@ -43,6 +44,8 @@ export class Engine {
             this.renderer = options.renderer;
         } else {
             this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             this.renderer.setSize(window.innerWidth, window.innerHeight);
             this.renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(this.renderer.domElement);
@@ -83,12 +86,23 @@ export class Engine {
         };
 
         // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // Reduced ambient for better contrast
         this.scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(100, 100, 50);
+        // Afternoon Sun
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(50, 80, 30); // High afternoon sun
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.left = -100;
+        dirLight.shadow.camera.right = 100;
+        dirLight.shadow.camera.top = 100;
+        dirLight.shadow.camera.bottom = -100;
         this.scene.add(dirLight);
+        this.dirLight = dirLight;
 
         // Debug Aids
         const gridHelper = new THREE.GridHelper(100, 100);
@@ -98,8 +112,10 @@ export class Engine {
         this.scene.add(axesHelper);
 
         const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        const material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Use Standard for shadows
         const cube = new THREE.Mesh(geometry, material);
+        cube.castShadow = true;
+        cube.receiveShadow = true;
         cube.position.set(0, 10, -5); // In front of camera
         this.scene.add(cube);
 
@@ -174,6 +190,23 @@ export class Engine {
         } else {
             this.debugCamera = null;
         }
+    }
+
+    setLighting(enabled: boolean) {
+        if (this.renderer) {
+            this.renderer.shadowMap.enabled = enabled;
+        }
+        if (this.dirLight) {
+            this.dirLight.castShadow = enabled;
+        }
+        // Also toggle AO if possible, but that requires material update on chunks
+        this.worldManager.setAO(enabled);
+    }
+
+    setRenderDistance(distance: number) {
+        this.worldManager.setRenderDistance(distance);
+        // Force update immediately to feel responsive
+        this.worldManager.updateChunks(this.camera.position.x, this.camera.position.z);
     }
 
     start() {

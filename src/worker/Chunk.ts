@@ -55,16 +55,12 @@ export class Chunk {
         const positions: number[] = [];
         const normals: number[] = [];
         const uvs: number[] = [];
+        const colors: number[] = []; // Vertex colors for AO
         const indices: number[] = [];
 
         let indexOffset = 0;
 
-        // Helper for UVs
-        // Atlas is 2x2.
-        // 0: Grass Top (TL) -> 0, 0.5
-        // 1: Dirt (TR) -> 0.5, 0.5
-        // 2: Stone (BL) -> 0, 0
-        // 3: Side Grass (BR) -> 0.5, 0
+        // Helper for UVs (same as before)
         const uvMap = [
             { u: 0.0, v: 0.5 }, // 0: Grass Top
             { u: 0.5, v: 0.5 }, // 1: Dirt
@@ -73,86 +69,129 @@ export class Chunk {
         ];
 
         const getBlockUVs = (block: number, face: string) => {
-            let textureIndex = 1; // Default Dirt
-
-            if (block === 1) { // Grass Block
-                if (face === 'top') textureIndex = 0; // Grass Top
-                else if (face === 'bottom') textureIndex = 1; // Dirt
-                else textureIndex = 3; // Side Grass
-            } else if (block === 2) { // Dirt
-                textureIndex = 1;
-            } else if (block === 3) { // Stone
-                textureIndex = 2;
-            }
+            let textureIndex = 1;
+            if (block === 1) {
+                if (face === 'top') textureIndex = 0;
+                else if (face === 'bottom') textureIndex = 1;
+                else textureIndex = 3;
+            } else if (block === 2) textureIndex = 1;
+            else if (block === 3) textureIndex = 2;
 
             const { u, v } = uvMap[textureIndex];
-            const s = 0.5; // Size of one slot
-            // UVs for a quad: (0,0), (1,0), (1,1), (0,1) relative to slot
-            // But we need to match the vertex order.
-            // Vertices are usually: BL, BR, TR, TL (or similar order)
-            // Let's check the push order below.
+            const s = 0.5;
             return { u, v, s };
         };
 
-        // Simple culled meshing (only draw faces adjacent to air)
+        // AO Helper
+        // Returns light value 0.0 - 1.0 based on neighbors
+        const calculateAO = (side1: number, side2: number, corner: number) => {
+            if (side1 && side2) return 0.2; // Fully occluded corner
+            const occlusion = (side1 ? 1 : 0) + (side2 ? 1 : 0) + (corner ? 1 : 0);
+            // 0 -> 1.0, 1 -> 0.8, 2 -> 0.6, 3 -> 0.4
+            return 1.0 - occlusion * 0.2;
+        };
+
+        // Helper to get block safely (handling chunk boundaries simply for now by returning 0)
+        // Ideally we need neighbor chunks for perfect AO at edges.
+        const get = (x: number, y: number, z: number) => this.getBlock(x, y, z);
+
         for (let x = 0; x < CHUNK_SIZE; x++) {
             for (let y = 0; y < CHUNK_HEIGHT; y++) {
                 for (let z = 0; z < CHUNK_SIZE; z++) {
                     const block = this.getBlock(x, y, z);
                     if (block === 0) continue;
 
-                    // Check neighbors
-                    // Top
-                    if (this.getBlock(x, y + 1, z) === 0) {
+                    // Top Face (Y+)
+                    if (get(x, y + 1, z) === 0) {
                         positions.push(x, y + 1, z + 1, x + 1, y + 1, z + 1, x + 1, y + 1, z, x, y + 1, z);
                         normals.push(0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0);
                         const { u, v, s } = getBlockUVs(block, 'top');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+
+                        // AO for Top Face
+                        // Neighbors at y+1
+                        const nN = get(x, y + 1, z - 1); // North (Z-)
+                        const nS = get(x, y + 1, z + 1); // South (Z+)
+                        const nW = get(x - 1, y + 1, z); // West (X-)
+                        const nE = get(x + 1, y + 1, z); // East (X+)
+
+                        const nNW = get(x - 1, y + 1, z - 1);
+                        const nNE = get(x + 1, y + 1, z - 1);
+                        const nSW = get(x - 1, y + 1, z + 1);
+                        const nSE = get(x + 1, y + 1, z + 1);
+
+                        // Vertices: 0:BL(x,z+1), 1:BR(x+1,z+1), 2:TR(x+1,z), 3:TL(x,z)
+                        // Wait, push order above: 
+                        // (x, y+1, z+1) -> SW
+                        // (x+1, y+1, z+1) -> SE
+                        // (x+1, y+1, z) -> NE
+                        // (x, y+1, z) -> NW
+
+                        const aoSW = calculateAO(nS, nW, nSW);
+                        const aoSE = calculateAO(nS, nE, nSE);
+                        const aoNE = calculateAO(nN, nE, nNE);
+                        const aoNW = calculateAO(nN, nW, nNW);
+
+                        colors.push(aoSW, aoSW, aoSW, aoSE, aoSE, aoSE, aoNE, aoNE, aoNE, aoNW, aoNW, aoNW);
+
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
-                    // Bottom
-                    if (this.getBlock(x, y - 1, z) === 0) {
+
+                    // Bottom Face (Y-)
+                    if (get(x, y - 1, z) === 0) {
                         positions.push(x, y, z, x + 1, y, z, x + 1, y, z + 1, x, y, z + 1);
                         normals.push(0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0);
                         const { u, v, s } = getBlockUVs(block, 'bottom');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+
+                        // AO (Simplified: just full brightness for bottom for now to save perf/complexity)
+                        colors.push(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
+
+                    // Sides - Simplified AO (just global dimming for sides vs top)
+                    const sideAO = 0.8;
+
                     // Front (Z+)
-                    if (this.getBlock(x, y, z + 1) === 0) {
+                    if (get(x, y, z + 1) === 0) {
                         positions.push(x, y, z + 1, x + 1, y, z + 1, x + 1, y + 1, z + 1, x, y + 1, z + 1);
                         normals.push(0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1);
                         const { u, v, s } = getBlockUVs(block, 'side');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+                        colors.push(sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO);
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
                     // Back (Z-)
-                    if (this.getBlock(x, y, z - 1) === 0) {
+                    if (get(x, y, z - 1) === 0) {
                         positions.push(x + 1, y, z, x, y, z, x, y + 1, z, x + 1, y + 1, z);
                         normals.push(0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1);
                         const { u, v, s } = getBlockUVs(block, 'side');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+                        colors.push(sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO);
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
                     // Right (X+)
-                    if (this.getBlock(x + 1, y, z) === 0) {
+                    if (get(x + 1, y, z) === 0) {
                         positions.push(x + 1, y, z + 1, x + 1, y, z, x + 1, y + 1, z, x + 1, y + 1, z + 1);
                         normals.push(1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0);
                         const { u, v, s } = getBlockUVs(block, 'side');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+                        colors.push(sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO);
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
                     // Left (X-)
-                    if (this.getBlock(x - 1, y, z) === 0) {
+                    if (get(x - 1, y, z) === 0) {
                         positions.push(x, y, z, x, y, z + 1, x, y + 1, z + 1, x, y + 1, z);
                         normals.push(-1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0);
                         const { u, v, s } = getBlockUVs(block, 'side');
                         uvs.push(u, v, u + s, v, u + s, v + s, u, v + s);
+                        colors.push(sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO, sideAO);
                         indices.push(indexOffset, indexOffset + 1, indexOffset + 2, indexOffset, indexOffset + 2, indexOffset + 3);
                         indexOffset += 4;
                     }
@@ -164,6 +203,7 @@ export class Chunk {
             positions: new Float32Array(positions),
             normals: new Float32Array(normals),
             uvs: new Float32Array(uvs),
+            colors: new Float32Array(colors),
             indices: new Uint32Array(indices)
         };
     }

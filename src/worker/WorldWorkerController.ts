@@ -33,7 +33,7 @@ export class WorldWorkerController {
                 this.chunks.set(key, chunk);
             }
 
-            if (chunk.isDirty) {
+            if (chunk.isDirty || type === 'LOAD_CHUNK') { // Always send if requested
                 const geometry = chunk.generateGeometry();
                 this.postMessage({
                     type: 'CHUNK_DATA',
@@ -42,7 +42,7 @@ export class WorldWorkerController {
                         geometry,
                         key
                     }
-                }, [geometry.positions.buffer, geometry.normals.buffer, geometry.uvs.buffer, geometry.indices.buffer] as any);
+                }, [geometry.positions.buffer, geometry.normals.buffer, geometry.uvs.buffer, geometry.colors.buffer, geometry.indices.buffer] as any);
                 chunk.isDirty = false;
             }
         } else if (type === 'SET_BLOCK') {
@@ -78,7 +78,7 @@ export class WorldWorkerController {
                         geometry,
                         key
                     }
-                }, [geometry.positions.buffer, geometry.normals.buffer, geometry.uvs.buffer, geometry.indices.buffer] as any);
+                }, [geometry.positions.buffer, geometry.normals.buffer, geometry.uvs.buffer, geometry.colors.buffer, geometry.indices.buffer] as any);
                 chunk.isDirty = false;
             }
         }

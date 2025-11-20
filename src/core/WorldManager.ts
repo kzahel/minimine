@@ -4,6 +4,8 @@ export class WorldManager {
     scene: THREE.Scene;
     worker: Worker;
     chunks: Map<string, THREE.Mesh> = new Map();
+    pendingChunks: Set<string> = new Set();
+    renderDistance: number = 2;
     private texture: THREE.Texture | null = null;
     lastBrokenBlockId: number = 1; // Default to Grass
 
@@ -27,20 +29,53 @@ export class WorldManager {
         this.updateChunks(0, 0);
     }
 
+    setRenderDistance(distance: number) {
+        this.renderDistance = distance;
+        // Trigger immediate update? Or wait for next loop?
+        // Let's wait for next update loop in Engine, or we can force a check.
+        // But updateChunks requires player position.
+    }
+
     updateChunks(playerX: number, playerZ: number) {
-        const radius = 2; // Small radius for now
+        const radius = this.renderDistance; // Small radius for now
         const chunkX = Math.floor(playerX / 16);
         const chunkZ = Math.floor(playerZ / 16);
 
+        // Load new chunks
         for (let x = -radius; x <= radius; x++) {
             for (let z = -radius; z <= radius; z++) {
-                this.requestChunk(chunkX + x, chunkZ + z);
+                const key = `${chunkX + x},${chunkZ + z}`;
+                if (!this.chunks.has(key) && !this.pendingChunks.has(key)) {
+                    this.requestChunk(chunkX + x, chunkZ + z);
+                }
             }
+        }
+
+        // Unload old chunks
+        for (const [key, mesh] of this.chunks.entries()) {
+            const [cx, cz] = key.split(',').map(Number);
+            if (Math.abs(cx - chunkX) > radius || Math.abs(cz - chunkZ) > radius) {
+                this.scene.remove(mesh);
+                mesh.geometry.dispose();
+                (mesh.material as THREE.Material).dispose();
+                this.chunks.delete(key);
+                this.pendingChunks.delete(key); // Ensure we can reload it if we walk back
+                console.log(`Unloaded chunk ${cx}, ${cz}`);
+            }
+        }
+    }
+
+    setAO(enabled: boolean) {
+        for (const mesh of this.chunks.values()) {
+            const material = mesh.material as THREE.MeshLambertMaterial;
+            material.vertexColors = enabled;
+            material.needsUpdate = true;
         }
     }
 
     updateChunk(data: any) {
         const { x, z, geometry, key } = data;
+        this.pendingChunks.delete(key);
         console.log(`Received chunk ${x}, ${z} with ${geometry.positions.length} vertices`);
 
         if (this.chunks.has(key)) {
@@ -61,11 +96,14 @@ export class WorldManager {
         bufferGeometry.setAttribute('position', new THREE.BufferAttribute(geometry.positions, 3));
         bufferGeometry.setAttribute('normal', new THREE.BufferAttribute(geometry.normals, 3));
         bufferGeometry.setAttribute('uv', new THREE.BufferAttribute(geometry.uvs, 2));
+        if (geometry.colors && geometry.colors.length > 0) {
+            bufferGeometry.setAttribute('color', new THREE.BufferAttribute(geometry.colors, 3));
+        }
         bufferGeometry.setIndex(new THREE.BufferAttribute(geometry.indices, 1));
 
         const material = new THREE.MeshLambertMaterial({
             map: this.loadTexture(),
-            vertexColors: false,
+            vertexColors: true, // Enable vertex colors for AO
             side: THREE.DoubleSide // Ensure visibility from inside if stuck
         });
 
@@ -170,6 +208,8 @@ export class WorldManager {
     }
 
     requestChunk(x: number, z: number) {
+        const key = `${x},${z}`;
+        this.pendingChunks.add(key);
         this.worker.postMessage({ type: 'LOAD_CHUNK', x, z });
     }
 

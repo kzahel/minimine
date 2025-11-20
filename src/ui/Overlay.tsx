@@ -11,7 +11,8 @@ export const Overlay: React.FC<OverlayProps> = ({ engine }) => {
         renderDistance: 2,
         fov: 75,
         fog: true,
-        flyMode: false
+        flyMode: false,
+        lighting: true
     });
 
     useEffect(() => {
@@ -71,7 +72,12 @@ export const Overlay: React.FC<OverlayProps> = ({ engine }) => {
             if (key === 'flyMode') {
                 engine.isFlying = value;
             }
-            // Render distance logic would go here (update WorldManager)
+            if (key === 'lighting') {
+                engine.setLighting(value);
+            }
+            if (key === 'renderDistance') {
+                engine.setRenderDistance(value);
+            }
         }
     };
 
@@ -111,6 +117,17 @@ export const Overlay: React.FC<OverlayProps> = ({ engine }) => {
 
                     <div style={{ marginBottom: '10px' }}>
                         <label>
+                            Render Distance: {settings.renderDistance}
+                            <input
+                                type="range" min="2" max="20"
+                                value={settings.renderDistance}
+                                onChange={(e) => updateSetting('renderDistance', parseInt(e.target.value))}
+                            />
+                        </label>
+                    </div>
+
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>
                             FOV: {settings.fov}
                             <input
                                 type="range" min="30" max="110"
@@ -139,6 +156,17 @@ export const Overlay: React.FC<OverlayProps> = ({ engine }) => {
                                 onChange={(e) => updateSetting('flyMode', e.target.checked)}
                             />
                             Fly Mode
+                        </label>
+                    </div>
+
+                    <div style={{ marginBottom: '10px' }}>
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={settings.lighting}
+                                onChange={(e) => updateSetting('lighting', e.target.checked)}
+                            />
+                            Fancy Lighting (AO + Shadows)
                         </label>
                     </div>
 
