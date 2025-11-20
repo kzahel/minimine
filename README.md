@@ -1,5 +1,7 @@
 # Mini Minecraft Clone
 
+See demo here: https://kyle.graehl.org/minimine/
+
 A voxel-based sandbox game built with **TypeScript**, **Three.js**, and **Vite**. This project was "vibe coded" using an advanced AI coding assistant, demonstrating a modern workflow where high-level intent guides AI implementation.
 
 ## 🎮 Features
